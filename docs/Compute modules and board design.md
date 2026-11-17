@@ -235,7 +235,8 @@ No evidence was found of flutter-pi, WPE `wpevideosrc` or GStreamer dmabuf impor
 2. Run the go/no-go checks above (`eglinfo`, KMS atomic, GStreamer hardware decode with dmabuf output).
 3. Build Hearth's flutter-pi fork, rebased onto upstream #529, and run Hearth on HDMI: UI, a 1080p H.264 stream, an HEVC stream, and a Home Assistant dashboard through WPE.
 4. Run Linux Voice Assistant with an I2S or PDM microphone on the header.
-5. Only then: write the DSI panel overlay and connect a Nest Hub panel through an adapter flex, once its pinout is measured.
+5. Android comparison (decision D8, reopened): boot Radxa's Android 14 image from a second microSD card, install the Hearth APK, and repeat step 3 plus the built-in voice satellite. Compare Linux, Android and the Apolosign RK35xx tablet side by side on scrolling smoothness, video start and playback, web dashboard rendering and voice response. Record results in the bench log.
+6. Only then: write the DSI panel overlay and connect a Nest Hub panel through an adapter flex, once its pinout is measured.
 
 ### Sources
 

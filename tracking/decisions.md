@@ -11,7 +11,7 @@ One entry per design decision. Change the status and fill in the outcome when a 
 | D5 | Backlight driver (and panel bias supply on the Max) | Open | | |
 | D6 | Radio and antennas | Open | | |
 | D7 | Optional peripherals and thermal (radar, camera) | Open | | |
-| D8 | Operating system and product scope | Decided | Linux running Hearth, with Home Assistant's Linux Voice Assistant for voice. No Raspberry Pi silicon. Sold as retrofit kits. | 2026-11-17 |
+| D8 | Operating system and product scope | Partly decided | Hearth, sold as retrofit kits, no Raspberry Pi silicon. Linux or Android reopened: decided by the ROCK 4D bench comparison. | 2026-11-17 |
 
 ## D1. Target model
 
@@ -74,9 +74,13 @@ One entry per design decision. Change the status and fill in the outcome when a 
 ## D8. Operating system and product scope
 
 - **Decided:** the product is a retrofit board sold to other people, running Hearth (the Flutter kiosk app in the Hearth-Home repo).
-- **Decided:** Linux, not Android. Hearth already runs on Linux through flutter-pi, the board needs no Android hardware layers, and Linux images and update tools are fine to use commercially. Voice runs as Home Assistant's Linux Voice Assistant alongside Hearth, as on the Pi build today.
 - **Decided:** no Raspberry Pi silicon.
-- **Consequences:**
+- **Reopened (2026-11-17): Linux or Android.** First decided as Linux, then reopened because Hearth on Android runs very smoothly on a Rockchip RK35xx tablet (Apolosign), and Flutter's Android embedder is first-class while flutter-pi is a community project that is weakest on video and web views.
+  - **For Linux:** mainline kernel with most drivers already upstream; no Android hardware layers; lighter builds; distribution security updates. Voice runs as Home Assistant's Linux Voice Assistant alongside Hearth. Hearth's video and WPE web dashboards are unproven on non-Pi boards.
+  - **For Android:** Hearth's smoothest platform today, with its built-in voice satellite and the system web view. Licensing is not a blocker on Rockchip: AOSP is Apache-licensed, Rockchip's SDK is meant for products, and Hearth needs no Google Play services. (The non-commercial problem was specific to the community Raspberry Pi build.)
+  - **Cost of Android:** Rockchip's Android SDK and its 6.1 vendor kernel (our touch and light-sensor drivers would be ported to that); audio routing, backlight and light-sensor hardware layers; heavy builds; we merge Android security patches into Rockchip's tree ourselves, usually with a lag; tied to Rockchip's release schedule.
+  - **How it gets decided:** run Hearth on the ROCK 4D under Radxa's Android image and under mainline Linux, and compare both against the Apolosign tablet (scrolling, video, a web dashboard, voice). The RK3576 suits either outcome.
+- **Consequences if Linux is chosen:**
   - The driver tracker's Android-layer column and the "Works in Android" status step no longer apply; the last step becomes "Works in Hearth".
   - The project name still says Android.
   - The chip must have a mainline GPU and display stack that flutter-pi, its GStreamer video player and WPE WebKit work on; see "Linux stack and chip selection" in `docs/Compute modules and board design.md`.
