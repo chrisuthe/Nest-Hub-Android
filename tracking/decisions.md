@@ -4,7 +4,7 @@ One entry per design decision. Change the status and fill in the outcome when a 
 
 | ID | Decision | Status | Outcome | Date |
 |---|---|---|---|---|
-| D1 | Target model, and one board or several | Partly decided | 1st gen is the first target. Whether the 2nd gen shares a schematic core is open. | 2026-11-17 |
+| D1 | Target model, and one board or several | Decided | 1st gen first. One superset schematic, one bench board for all three models, three form-fit layouts, one software build. | 2026-11-17 |
 | D2 | Compute module | Open | | |
 | D3 | Microphone path | Open | | |
 | D4 | Amplifier | Open | | |
@@ -15,7 +15,14 @@ One entry per design decision. Change the status and fill in the outcome when a 
 ## D1. Target model
 
 - **Decided:** start with the 1st gen. It is the best documented and simplest: no radar, no camera, one amplifier, known 14 V supply.
-- **Open:** whether the 2nd gen shares a schematic core. Needs both boards measured.
+- **Decided: board strategy.**
+  - **One superset schematic.** Covers all three models, with parts fitted or left off per model: 14-24 V input, LP8556 set for 3 or 6 strings, panel bias supply (Max only), one or three amplifier channels, two PDM data inputs, radar SPI (2nd gen only), camera CSI-2 (Max only).
+  - **Board ID straps.** A few resistor straps on each board tell software which model it is in.
+  - **One bench board.** Drives all three models from outside the enclosure, through small per-model adapter flexes. Used for bring-up before any form-fit board.
+  - **Three form-fit layouts.** One per model, from the same schematic, 1st gen first. One drop-in board for all three is ruled out: the stock outlines (about 121 x 46, 101 x 46 and 117 x 62 mm), mounting holes, connector positions, heat paths and input voltages (14 V vs 24 V) all differ.
+  - **One software build.** One kernel and Android build, with a device-tree overlay per model chosen at boot from the board ID straps.
+- **Open:** whether the two 7-inch models can share one form-fit board. Depends on whether the module plus the superset parts fit the 2nd gen's 101 x 46 mm outline and height; needs both boards measured.
+- **Open:** whether one amplifier part suits both the 14 V and the 24 V models (see D4).
 - **2nd gen:** shares the panel family and bus layout with the 1st gen, and adds the radar, the GT6853 touch risk and a third microphone. Its stock board is about 101 x 46 mm against about 121 x 46 mm, so a shared outline is unknowable until both are measured.
 - **Max:** gets its own board: 24 V, 10.1-inch panel with external bias rails, three amplifiers and a camera. It shares the electrical architecture (portrait DSI panel, I2C touch, PDM mics, TCS3400, LP8556) with the 7-inch models.
 
