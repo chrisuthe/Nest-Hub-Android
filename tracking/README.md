@@ -20,10 +20,16 @@ Each peripheral has one short ID (`DISP`, `BL`, `TOUCH`, ...) used in all three 
 
 | Value | Meaning |
 |---|---|
-| Confirmed | From the exact part's datasheet, a photo, or Google's own board code |
+| Confirmed | From the exact part's datasheet, Google's own board code, or read directly off a photo (a designator, a marking, a part or wire being present) |
 | Sibling | From a related part or another model. Not safe to wire from |
 | Inferred | Reasoning from other facts |
 | Measured | Taken on a real unit and recorded in `bench-log.md` |
+
+Contact counts, pitches and dimensions estimated from photos are **Inferred**, however confident the estimate: they are counts by eye at limited resolution, and rule 1 needs them measured anyway. The confidence goes in the row's notes.
+
+## Connector names
+
+Pinout `connector` values use one description per role, the same across models, with the stock designator in brackets where one is known: `Display flex (J12)`, `Mic board FFC`, `DC-jack board FFC (J4)`, `Speaker connector`, `Antenna coax (J3)`. Use `connector` for a part whose type is not known yet.
 
 ## Status
 

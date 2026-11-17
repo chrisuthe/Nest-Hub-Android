@@ -51,16 +51,16 @@ Location unknown,Volume down,BTN,,in,Unknown,Confirmed,Open,Active low
 Location unknown,Volume both,BTN,,in,Unknown,Confirmed,Open,Active low; the AND logic may be on the mainboard instead
 Location unknown,Amber LED,LED,,out,Unknown,Confirmed,Open,Only if the LED is off the mainboard
 Location unknown,Green LED,LED,,out,Unknown,Confirmed,Open,Only if the LED is off the mainboard
-DC-jack board cable,Contact count and pitch,PWR,,n/a,n/a,Inferred,Open,Not characterised; possibly one of the bottom-edge ZIF connectors
-DC-jack board cable,24 V input,PWR,,power,24 V,Confirmed,Open,Probably several pins in parallel
-DC-jack board cable,Grounds,PWR,,power,0 V,Inferred,Open,
-Speaker header,Connector family and pitch,SPK,,n/a,n/a,Inferred,Open,8 positions (medium-high confidence); about 1.25-1.5 mm pitch; right-angle wire-to-board
-Speaker header,Woofer +,SPK,,out,Amplifier output,Confirmed,Open,
-Speaker header,Woofer -,SPK,,out,Amplifier output,Confirmed,Open,
-Speaker header,Left tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
-Speaker header,Left tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
-Speaker header,Right tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
-Speaker header,Right tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
-Speaker header,Remaining 2 positions,SPK,,n/a,Unknown,Inferred,Open,8 positions for 6 speaker leads; purpose unknown
+DC-jack board connector,Contact count and pitch,PWR,,n/a,n/a,Inferred,Open,Not characterised; possibly one of the bottom-edge ZIF connectors
+DC-jack board connector,24 V input,PWR,,power,24 V,Confirmed,Open,Probably several pins in parallel
+DC-jack board connector,Grounds,PWR,,power,0 V,Inferred,Open,
+Speaker connector,Connector family and pitch,SPK,,n/a,n/a,Inferred,Open,8 positions (medium-high confidence); about 1.25-1.5 mm pitch; right-angle wire-to-board
+Speaker connector,Woofer +,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker connector,Woofer -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker connector,Left tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
+Speaker connector,Left tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker connector,Right tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
+Speaker connector,Right tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker connector,Remaining 2 positions,SPK,,n/a,Unknown,Inferred,Open,8 positions for 6 speaker leads; purpose unknown
 Antenna coax,Wi-Fi / Bluetooth antennas,RADIO,,bidir,RF,Confirmed,Open,MHF4; two jacks besides the Thread jack
 Antenna coax,Thread antenna,THREAD,,bidir,RF,Inferred,Open,Coax jack beside the nRF52840; type not stated
