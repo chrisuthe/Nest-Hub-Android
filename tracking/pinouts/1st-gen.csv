@@ -1,0 +1,41 @@
+connector,signal,hardware_id,pin,direction,voltage,evidence,status,notes
+Display flex,Contact count and pitch (mainboard end),DISP,,n/a,n/a,Inferred,Open,About 33 at 0.3 mm guessed from size match with the 2nd gen; BOE datasheet says 39 at the panel. Count both ends of the jumper flex
+Display flex,DSI clock pair,DISP,,out,MIPI D-PHY,Confirmed,Open,Signal exists; pin unknown
+Display flex,DSI data lane 0 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 1 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 2 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 3 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,LCD reset,DISP,,out,Unknown,Confirmed,Open,Sequence: high 30 ms / low 10 ms / high 30 ms
+Display flex,Panel ID strap,DISP-ID,,in,Unknown,Confirmed,Open,0 = BOE / 1 = Innolux
+Display flex,VCC,DISP-PWR,,power,3.3 V (BOE listing),Confirmed,Open,35 mA typical
+Display flex,VDDI,DISP-PWR,,power,3.3 V (BOE listing),Confirmed,Open,19 mA typical
+Display flex,LED anode,BL,,power,About 21 V,Inferred,Open,Common anode assumed; verify
+Display flex,LED cathode 1,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 2,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 3,BL,,power,n/a,Inferred,Open,
+Display flex,Touch supply,TOUCH,,power,Unknown,Inferred,Open,May share VCC or VDDI
+Display flex,Touch I2C SDA,TOUCH,,bidir,Unknown,Inferred,Open,Touch sharing the display flex is inferred
+Display flex,Touch I2C SCL,TOUCH,,out,Unknown,Inferred,Open,
+Display flex,Touch interrupt,TOUCH,,in,Unknown,Inferred,Open,
+Display flex,Touch reset,TOUCH,,out,Unknown,Inferred,Open,
+Display flex,Grounds,DISP,,power,0 V,Inferred,Open,Find by continuity
+Top daughterboard FFC,Contact count and pitch,MIC,,n/a,n/a,Inferred,Open,About 10-12 from photos (low confidence)
+Top daughterboard FFC,Supply,MIC,,power,Unknown,Inferred,Open,May be more than one rail
+Top daughterboard FFC,PDM clock,MIC,,out,Unknown,Confirmed,Open,About 3.072 MHz on stock
+Top daughterboard FFC,PDM data,MIC,,in,Unknown,Confirmed,Open,Two mics on one line
+Top daughterboard FFC,Light sensor I2C SDA,ALS,,bidir,Unknown,Inferred,Open,
+Top daughterboard FFC,Light sensor I2C SCL,ALS,,out,Unknown,Inferred,Open,
+Top daughterboard FFC,Light sensor interrupt,ALS,,in,Unknown,Inferred,Open,
+Top daughterboard FFC,Mute switch,MUTE,,in,Unknown,Confirmed,Open,
+Top daughterboard FFC,Amber LED,LED,,out,Unknown,Inferred,Open,Only if the LED is on this board
+Top daughterboard FFC,Grounds,MIC,,power,0 V,Inferred,Open,
+Base board FFC,Contact count and pitch,PWR,,n/a,n/a,Inferred,Open,About 10-12 from photos (low confidence)
+Base board FFC,14 V input,PWR,,power,14 V,Confirmed,Open,Probably several pins in parallel
+Base board FFC,USB VBUS,USB,,power,5 V,Inferred,Open,
+Base board FFC,USB D+,USB,,bidir,USB 2.0,Inferred,Open,
+Base board FFC,USB D-,USB,,bidir,USB 2.0,Inferred,Open,
+Base board FFC,USB ID,USB,,in,Unknown,Inferred,Open,
+Base board FFC,Grounds,PWR,,power,0 V,Inferred,Open,
+Speaker connector,Connector family and pitch,SPK,,n/a,n/a,Inferred,Open,2 positions (medium confidence)
+Speaker connector,Speaker +,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker connector,Speaker -,SPK,,out,Amplifier output,Confirmed,Open,

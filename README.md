@@ -15,6 +15,10 @@ One master document per model, plus one for everything shared. Update these in p
 
 Each model document uses the same sections: identification, layout and connectors, display, display connector and pinout, backlight, touch, audio, sensors, buttons/LEDs/thermal, power, driver coverage, what a replacement board must provide, open questions, sources.
 
+## Tracking
+
+What we are building, and how far each item has got, is in [tracking/](tracking/README.md): a hardware requirements table, connector pinout sheets, a driver table, a decisions log and a bench log. Only the 1st gen is seeded so far.
+
 ## Status
 
 Desk research only. Nothing has been built, measured or tested on hardware. No connector pinout is public for any model.
