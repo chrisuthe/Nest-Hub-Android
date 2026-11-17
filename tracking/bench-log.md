@@ -52,6 +52,16 @@ On each opened Nest Hub:
 - [ ] Stock heat sink or spreader: material, outline, thickness, where it touches the board, how it mounts, and whether it also touches the enclosure or display frame (`THERM`, `MECH`)
 - [ ] Gap between the board and the heat sink at the SoC position, to size a thermal pad for a new board (`THERM`, `MECH`)
 
+## Planned measurements, add-on base (all models)
+
+On each opened Nest Hub:
+
+- [ ] The path from the mainboard area to the bottom: where a cable could pass, the narrowest gap, and whether the stock base flex route can take a wider flex (`MECH`)
+- [ ] Cable length needed from the mainboard's display connector position to the bottom centre (`DISP`, `MECH`)
+- [ ] Bottom shape and dimensions with the rubber foot removed; screw bosses or flat areas a base could fix to (`MECH`)
+- [ ] Speaker vent and port locations that a base must keep clear (`SPK`, `MECH`)
+- [ ] Weight and centre of gravity, to check a base keeps the unit stable (`MECH`)
+
 ## Planned measurements, 2nd gen
 
 Before opening (unit running stock firmware):

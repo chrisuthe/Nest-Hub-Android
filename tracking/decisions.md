@@ -4,7 +4,7 @@ One entry per design decision. Change the status and fill in the outcome when a 
 
 | ID | Decision | Status | Outcome | Date |
 |---|---|---|---|---|
-| D1 | Target model, and one board or several | Decided | 1st gen first. One superset schematic, one bench board for all three models, three form-fit layouts, one software build. | 2026-11-17 |
+| D1 | Target model, and one board or several | Decided, pending checks | 1st gen first. One compute board in a 3D-printed add-on base (one print per model), three small interface boards in the stock mainboard space, one cable between them, one software build. | 2026-11-17 |
 | D2 | Compute module | Open | | |
 | D3 | Microphone path | Open | | |
 | D4 | Amplifier | Open | | |
@@ -16,7 +16,20 @@ One entry per design decision. Change the status and fill in the outcome when a 
 ## D1. Target model
 
 - **Decided:** start with the 1st gen. It is the best documented and simplest: no radar, no camera, one amplifier, known 14 V supply.
-- **Decided: board strategy.**
+- **Decided (2026-11-17): base architecture.** Replaces the three form-fit boards below as the plan, subject to the checks listed here.
+  - **One compute board, the same for all three models**, in a 3D-printed base that screws or tapes to the bottom of the hub in place of its rubber foot. It carries the compute module, its heat sink and the Wi-Fi antenna, outside the sealed shell.
+  - **Three 3D-printed bases**, one per model, shaped to each model's bottom.
+  - **Three small interface boards**, one per model, in the stock mainboard's space: the stock connectors (display, microphones and sensors, buttons, speaker, power jack), the LP8556 backlight driver, the amplifier(s), the power stage for 14 V or 24 V, the panel bias supply on the Max, and the board ID straps.
+  - **One cable between them**, carrying 4-lane DSI, I2C, I2S, the control GPIOs and power.
+  - **Why:** removes the module size limit (the 2nd gen's 101 x 46 mm board was the hard case) and the thermal limit of the sealed shell, and lets one compute design serve all three models.
+  - **Variant to evaluate:** the base could hold an off-the-shelf single-board computer (for example the ROCK 4D, which already has 4-lane DSI and I2S/PDM on its header) instead of a custom compute board, leaving only the interface boards and bases custom. Trades a custom board for dependence on that board's supply.
+  - **Checks before committing:**
+    1. **Cable exit path.** Whether a flex wide enough for DSI plus the other signals can pass from the mainboard area to the bottom without cutting the shell, on each model. On the 1st gen the existing path is the 10–12 contact flex to the barrel-jack board in the base.
+    2. **DSI over the cable.** Signal integrity of 4-lane DSI (about 300 Mbit/s per lane on the 7-inch panels, about 424 on the Max) over the cable length needed. Options: impedance-controlled FPC, or micro-coax as laptops use for eDP.
+    3. **Acoustics.** On the 1st gen the speaker sits in the base and fires through the chassis; the add-on base must not block its vents or change the enclosure volume.
+    4. **Stability and looks.** Added height, tilt and weight on each model.
+    5. **Power.** Which board takes the 14 V / 24 V input and what rail crosses the cable to the compute board.
+- **Superseded by the base architecture: board strategy.**
   - **One superset schematic.** Covers all three models, with parts fitted or left off per model: 14-24 V input, LP8556 set for 3 or 6 strings, panel bias supply (Max only), one or three amplifier channels, two PDM data inputs, radar SPI (2nd gen only), camera CSI-2 (Max only).
   - **Board ID straps.** A few resistor straps on each board tell software which model it is in.
   - **One bench board.** Drives all three models from outside the enclosure, through small per-model adapter flexes. Used for bring-up before any form-fit board.
