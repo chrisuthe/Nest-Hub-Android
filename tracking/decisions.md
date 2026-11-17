@@ -29,7 +29,9 @@ One entry per design decision. Change the status and fill in the outcome when a 
 
 ## D2. Compute module
 
-- **Options:** Raspberry Pi CM5 (newest community Android, panel needs a C driver entry, non-commercial licence); Radxa CM4 / CM5 (vendor Android 14, panel described in device tree); NXP i.MX 8M (current vendor Android, heaviest integration).
+- **Current shortlist (Linux, per D8):** RK3576 (Boardcon LGA3576 module) and i.MX 8M Plus (Ka-Ro QSXP module); fallback RK3566/RK3568. Comparison and reasoning in "Linux stack and chip selection" in `docs/Compute modules and board design.md`.
+- **Bench board:** Radxa ROCK 4D (RK3576) ordered 2026-11-17, for the bench test plan in that doc. No i.MX 8M Plus board ordered yet (recommended: NXP FRDM-IMX8MPLUS).
+- **Earlier options (Android plan, superseded by D8):** Raspberry Pi CM5 (newest community Android, panel needs a C driver entry, non-commercial licence); Radxa CM4 / CM5 (vendor Android 14, panel described in device tree); NXP i.MX 8M (current vendor Android, heaviest integration).
 - **Blocks:** almost every driver row, the power rail list, the microphone path and the board outline.
 - **Needs before deciding:** whether the candidate has a PDM input usable under Android; its kernel version (sets how much porting the light-sensor patch and any vendor touch driver need); its power draw against the enclosure's thermal limit.
 - **2nd gen also needs:** two PDM data inputs (three channels); a spare SPI at 25-30 MHz plus two GPIOs for the radar (1.8 V logic, or level shifting); a kernel the out-of-tree Goodix GTX8 touch driver can be ported to.
