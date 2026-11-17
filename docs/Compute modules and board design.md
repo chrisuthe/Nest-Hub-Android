@@ -192,6 +192,68 @@ This is the research's recommendation, not a decision.
 - **Fallback:** RK3566/RK3568, cheap and mature with mainline PDM, but limited to H.264 decode under mainline.
 - **Next step:** buy a dev board for the top one or two, run the go/no-go checks, then run Hearth itself (UI, video and WPE) before choosing.
 
+## Bench evaluation boards
+
+Research date: 2026-11-17. Nothing has been bought. Mainline status was checked against the device trees in `torvalds/linux` master (7.4-rc3).
+
+**Neither product module's official carrier suits the bench test.** Ka-Ro's QSBASE4 for the QSXP wires only 2 DSI lanes (15-pin Raspberry-Pi-style connector), and mainline has no QSXP device tree; the kit is €265 and backordered. Boardcon's Idea3576 for the LGA3576 has 4-lane DSI on a 2x13 header with the pinout in its manual, but no mainline device tree (vendor 6.1.141 kernel), no I2S or PDM header, and no public price.
+
+**No RK3576 board has DSI working in mainline yet.** The DSI controller, PHY and bridge are in the SoC device tree since 6.18-rc1, but Collabora's status page still lists DSI as TODO on its reference boards, and no RK3576 board file sets up a panel. A DSI + panel device-tree overlay is ours to write on any RK3576 board. The panel side is not a gap: the stock panels use the JD9364/JD9365, which the mainline `panel-jadard-jd9365da-h3` driver covers (see the driver tracker).
+
+### RK3576
+
+| Board | Price | DSI connector | Audio on header | Mainline / distro |
+|---|---|---|---|---|
+| **Radxa ROCK 4D** (recommended) | About $99 (Allnet; variant not stated); sold out at Arace | 39-pin 0.3 mm FPC, 4 lanes, pinout and schematics published | SAI2, SAI3 and PDM0 on the 40-pin header; SPI1/2, several I2C | Mainline DT; Collabora reference board; onboard audio patch submitted, not merged; DSI TODO; Armbian Standard |
+| ArmSoM Sige5 (runner-up) | $164 for 8 GB (out of stock at ArmSoM) | 34-pin 0.5 mm FPC, 4 lanes, pinout published | SAI0/1/3/4 and PDM0 on the 40-pin header | Mainline DT with ES8388 sound (6.16); Collabora reference board; Armbian Community |
+| FriendlyElec NanoPi M5 | $75 | 30-pin 0.5 mm FPC, 4 lanes, pinout and schematics | No SAI or PDM on the header | Mainline DT with sound; vendor 6.1 images |
+| Firefly ROC-RK3576-PC | $259–289 | 30-pin 0.5 mm, 4 lanes; pinout not checked | 20-pin header, I2C/SPI; no I2S found | Mainline DT, no sound node |
+| Boardcon Idea3576 | Not published | 2x13 header, 4 lanes, pinout in manual | No I2S/PDM header | Vendor 6.1.141 only |
+
+The ROCK 4D's 39-pin 0.3 mm DSI connector is the same class as the 1st gen BOE panel's I-PEX connector. That may make an adapter flex simpler, but the pin assignments are unknown and almost certainly differ; never connect the panel directly.
+
+### i.MX 8M Plus
+
+| Board | Price | DSI connector | Audio on header | Mainline / BSP |
+|---|---|---|---|---|
+| **NXP FRDM-IMX8MPLUS** (recommended) | $250 at NXP; from $220.59 at Future Electronics | J15, 22-pin 0.5 mm FPC, 4 lanes; schematics and design files from NXP, no pin table in the user manual | I2S/SPI/I2C on the 40-pin header; WM8962 codec | Mainline DT, DSI and sound not enabled; NXP 6.6.36 images |
+| Polyhex DEBIX Model A (runner-up) | $146–299, in stock | 24-pin 0.5 mm, 4 lanes (from a search snippet) | SPI, I2C; I2S "via software config"; no PDM listed | Mainline DT (DSI not enabled); Yocto 6.6.36, Ubuntu, Debian 12; schematics |
+| Toradex Verdin iMX8MP + Dahlia | Dahlia kit $196.40 + module (not priced) | Samtec 60-pin, 4 lanes, pinout in datasheet (2024) | I2S on the same connector; WM8904 codec | Mainline DTs with sound; Flutter shown via meta-flutter |
+| NXP 8MPLUSLPD4-EVK | $842 | Mainline enables 4-lane DSI to an HDMI bridge; physical connector not verified | Mainline enables PDM mics (MICFIL) and SAI3 + WM8960 | Most complete mainline DT |
+| Ka-Ro QSBASE4 + QSXP | €265, backordered | 2 lanes only | No SAI documented | No QSXP DT in mainline |
+
+### Why these two
+
+- **ROCK 4D:** mainline device tree, a Collabora reference board (board-level DSI should land there first), Armbian Standard support, a published 4-lane DSI pinout, I2S and PDM pins on the header, and the lowest price among the well-supported boards.
+- **FRDM-IMX8MPLUS:** mainline device tree, 4-lane DSI on a common 0.5 mm 22-pin connector, full NXP schematics and design files, I2S on the header. Adding the DSI and audio nodes ourselves is work the QSXP product board needs anyway.
+
+No evidence was found of flutter-pi, WPE `wpevideosrc` or GStreamer dmabuf import working on any of these boards.
+
+### Bench test plan
+
+1. Boot a mainline image (Armbian or Debian on the ROCK 4D; Debian or our own build on the FRDM) and record kernel and Mesa versions.
+2. Run the go/no-go checks above (`eglinfo`, KMS atomic, GStreamer hardware decode with dmabuf output).
+3. Build Hearth's flutter-pi fork, rebased onto upstream #529, and run Hearth on HDMI: UI, a 1080p H.264 stream, an HEVC stream, and a Home Assistant dashboard through WPE.
+4. Run Linux Voice Assistant with an I2S or PDM microphone on the header.
+5. Only then: write the DSI panel overlay and connect a Nest Hub panel through an adapter flex, once its pinout is measured.
+
+### Sources
+
+- Radxa ROCK 4D: https://www.radxa.com/products/rock4/4d/ ; https://docs.radxa.com/en/rock4/rock4d/hardware-use/hardware-info ; https://docs.radxa.com/en/rock4/rock4d/hardware-use/mipi-dsi ; https://docs.radxa.com/en/rock4/rock4d/hardware-use/pin-gpio ; https://www.armbian.com/radxa-rock-4d/ ; https://shop.allnetchina.cn/products/rock-4d ; https://arace.tech/products/radxa-rock-4d
+- ArmSoM Sige5: https://docs.armsom.org/armsom-sige5 ; https://www.armsom.org/product-page/sige5 ; https://www.armbian.com/armsom-sige5/ ; https://sbc.compare/armsom-sige5
+- FriendlyElec NanoPi M5: https://wiki.friendlyelec.com/wiki/index.php/NanoPi_M5 ; https://www.friendlyelec.com/index.php?route=product/product&product_id=309
+- Firefly ROC-RK3576-PC: https://www.firefly.store/products/roc-rk3576-pc-octa-core-6t-aiot-mini-computer ; https://www.t-firefly.com/products/roc-rk3576-pc-octa-core-6t-aiot-mini-computer
+- Boardcon Idea3576 / LGA3576: https://www.armdesigner.com/Idea3576_SBC ; https://www.armdesigner.com/download/Idea3576_hardware_manual.pdf ; https://www.electronics-lab.com/news/boardcon-lga3576-som-and-idea3576-sbc-feature-rockchip-rk3576-soc-with-6-tops-npu-and-rk806s-5-pmic/
+- Luckfox Omni3576 (not assessed): https://wiki.luckfox.com/Luckfox-Omni3576/Luckfox-Omni3576-Introduction/ ; https://spotpear.com/wiki/Raspberry-Pi-8-inch-DSI-MIPI-LCD-TouchScreen-Display-800x1280-Luckfox-Lyra-RK3506-Luckfox-Omni3576-ESP32-P4.html
+- RK3576 mainline status: https://gitlab.collabora.com/hardware-enablement/rockchip-3588/notes-for-rockchip-3576/-/blob/main/mainline-status.md ; https://docs.flipper.net/one/cpu-software/rk3576-mainlining
+- NXP FRDM-IMX8MPLUS: https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX8MPLUS ; https://community.nxp.com/t5/FRDM-Training-Hub/FRDM-IMX8MPLUS-Hub/ta-p/2107907 ; https://www.futureelectronics.com/resources/featured-products/nxp-frdm-imx-8m-plus-development-board ; https://www.digikey.be/en/products/detail/nxp-usa-inc/FRDM-IMX8MPLUS/26918033 ; user manual https://static6.arrow.com/aropdfconversion/cbd2b3d04f7d52672c1ae245567a590050f9f46a/um12340.pdf
+- Polyhex DEBIX Model A: https://debix.io/product/debix-model-a/ ; https://debix.io/blog/debix-model-a-gpio-instruction-manual/ ; https://device.report/manual/10193342
+- Toradex Dahlia: https://www.toradex.com/products/carrier-board/dahlia-carrier-board-kit ; https://docs.toradex.com/116797-dahlia_carrier_board_datasheet.pdf ; Flutter demo https://www.industrialflutter.com/videos/
+- NXP 8MPLUSLPD4-EVK: https://www.digikey.com/en/products/detail/nxp-usa-inc/8MPLUSLPD4-EVK/13897867
+- Ka-Ro QSXP / QSBASE4: https://www.karo-electronics.de/qsxp/ ; https://karo-electronics.github.io/docs/hardware-documentation/baseboards/qsbase4/pinout.html ; https://karo-electronics.github.io/docs/hardware-documentation/baseboards/qsbase4/quickstart.html ; https://strategic-embedded.com/products/qsbase4-evalkit-qsxp-ml81
+- SolidRun HummingBoard (mainline DSI overlay on the IIoT variant; Pulse/Mate not assessed): https://shop.solid-run.com/product/SRMP8-EVKHP-H8-R1.2/
+- Mainline device trees: https://github.com/torvalds/linux/tree/master/arch/arm64/boot/dts/rockchip ; https://github.com/torvalds/linux/tree/master/arch/arm64/boot/dts/freescale
+
 ## Sources
 
 What Hearth needs from a chip:
