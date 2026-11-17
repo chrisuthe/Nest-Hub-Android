@@ -1,0 +1,66 @@
+connector,signal,hardware_id,pin,direction,voltage,evidence,status,notes
+J12 display flex,Contact count and pitch (mainboard end),DISP,,n/a,n/a,Confirmed,Open,33 +/-1 at 0.3 mm by photo count (not independently verified); -39TI panel part number suggests 39 at the panel. Count both ends of jumper G653-01131-02 and CN1
+J12 display flex,DSI clock pair,DISP,,out,MIPI D-PHY,Confirmed,Open,Signal exists; pin unknown. Five pad pairs beside the upper half of J12 are consistent with the DSI group (inferred)
+J12 display flex,DSI data lane 0 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+J12 display flex,DSI data lane 1 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+J12 display flex,DSI data lane 2 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+J12 display flex,DSI data lane 3 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+J12 display flex,LCD reset,DISP,,out,Unknown,Confirmed,Open,Active low by name. Sequence: high 30 ms / low 10 ms / high 30 ms (Fitipower); 100 / 10 / 220 ms (ST7703)
+J12 display flex,Panel ID0 strap (driver IC),DISP-ID,,in,Unknown,Confirmed,Open,0 = JD9364 / 1 = JD9365
+J12 display flex,Panel ID1 strap (vendor),DISP-ID,,in,Unknown,Confirmed,Open,0 = K&D / 1 = BOE
+J12 display flex,Panel power-on control,DISP-PWR,,out,Unknown,Inferred,Open,Kernel panel GPIO index 1; driven low to power on. What it drives and whether it reaches J12 is unknown
+J12 display flex,Panel supply rails,DISP-PWR,,power,Unknown,Inferred,Open,No 2nd-gen data; TG1 sibling has 3.3 V VCC + 3.3 V VDDI. Panel flex silk shows VDDIN. May be more than one rail
+J12 display flex,LED anode,BL,,power,Unknown,Inferred,Open,Common anode assumed; verify. Panel flex has four backlight tail pads marked + and -
+J12 display flex,LED cathode 1,BL,,power,n/a,Inferred,Open,Three strings Confirmed (LP8556 3-phase); routing through J12 inferred
+J12 display flex,LED cathode 2,BL,,power,n/a,Inferred,Open,
+J12 display flex,LED cathode 3,BL,,power,n/a,Inferred,Open,
+J12 display flex,LEDPWM,BL,,out,Unknown,Inferred,Open,Silk label on the panel flex assembly; function and whether it reaches J12 unknown
+J12 display flex,Touch supply,TOUCH,,power,Unknown,Inferred,Open,TP_VDD silk on the panel flex assembly; may share a panel rail
+J12 display flex,Touch I2C SDA,TOUCH,,bidir,Unknown,Inferred,Open,Touch shares the jumper flex (Confirmed); pin-level routing inferred
+J12 display flex,Touch I2C SCL,TOUCH,,out,Unknown,Inferred,Open,400 kHz
+J12 display flex,Touch interrupt,TOUCH,,in,Unknown,Inferred,Open,Active low; falling edge
+J12 display flex,Touch reset,TOUCH,,out,Unknown,Inferred,Open,Active low
+J12 display flex,Grounds,DISP,,power,0 V,Inferred,Open,Find by continuity
+J15 radar FFC,Contact count and pitch,RADAR,,n/a,n/a,Confirmed,Open,10 at 0.5 mm (high confidence); ACES-style logo on the actuator
+J15 radar FFC,3V3,RADAR,,power,3.3 V,Confirmed,Open,Test-pad label (radar-board LDO input); FFC pin order unknown
+J15 radar FFC,3V4,RADAR,,power,3.4 V,Confirmed,Open,Test-pad label; made by a TPS7A2501 LDO on the mainboard
+J15 radar FFC,1V8,RADAR,,n/a,1.8 V,Confirmed,Open,Test-pad label for the radar-board LDO output; whether it reaches J15 is unknown
+J15 radar FFC,CS,RADAR,,out,1.8 V (inferred),Confirmed,Open,Test-pad label
+J15 radar FFC,RST,RADAR,,out,1.8 V (inferred),Confirmed,Open,Test-pad label
+J15 radar FFC,MISO,RADAR,,in,1.8 V (inferred),Confirmed,Open,Test-pad label
+J15 radar FFC,MOSI,RADAR,,out,1.8 V (inferred),Confirmed,Open,Test-pad label
+J15 radar FFC,IRQ,RADAR,,in,1.8 V (inferred),Confirmed,Open,Test-pad label
+J15 radar FFC,CLK,RADAR,,out,1.8 V (inferred),Confirmed,Open,Test-pad label; 25 MHz (kernel) or 30.3 MHz (Fuchsia)
+J15 radar FFC,Grounds,RADAR,,power,0 V,Confirmed,Open,GND test pad; number of ground contacts unknown
+J6 strip board FFC,Contact count and pitch,MIC,,n/a,n/a,Confirmed,Open,12 +/-1 at 0.5 mm (medium confidence); FFC printed AWM 20861 105C 60V VW-1
+J6 strip board FFC,Supply,MIC,,power,Unknown,Inferred,Open,May be more than one rail
+J6 strip board FFC,PDM clock,MIC,,out,Unknown,Confirmed,Open,Probably 3.072 MHz on stock
+J6 strip board FFC,PDM data 0,MIC,,in,Unknown,Confirmed,Open,First two mics on one line
+J6 strip board FFC,PDM data 1,MIC,,in,Unknown,Confirmed,Open,Third mic; stock kernel has this line commented out and TechInsights counts two mics
+J6 strip board FFC,Mute switch,MUTE,,in,Unknown,Confirmed,Open,
+J6 strip board FFC,Sensor I2C SDA,HUM,,bidir,Unknown,Inferred,Open,Only if the SHTC3 is on this board (TechInsights puts it with two mics on one sensor board)
+J6 strip board FFC,Sensor I2C SCL,HUM,,out,Unknown,Inferred,Open,Same condition as SDA
+J6 strip board FFC,Amber LED,LED,,out,Unknown,Inferred,Open,Only if the LED is on this board
+J6 strip board FFC,Grounds,MIC,,power,0 V,Inferred,Open,
+J5 board FFC,Contact count and pitch,ALS,,n/a,n/a,Confirmed,Open,6 at 0.5 mm (medium confidence); board G651-04807-02 with a single hole / sensor; contents not determined
+J5 board FFC,Supply,ALS,,power,Unknown,Inferred,Open,Only if this board carries the TCS3400
+J5 board FFC,Light sensor I2C SDA,ALS,,bidir,Unknown,Inferred,Open,Only if this board carries the TCS3400; sensor bus probably 1.8 V
+J5 board FFC,Light sensor I2C SCL,ALS,,out,Unknown,Inferred,Open,
+J5 board FFC,Light sensor interrupt,ALS,,in,Unknown,Inferred,Open,Active low by name
+J5 board FFC,Grounds,ALS,,power,0 V,Inferred,Open,
+J8 board FFC,Contact count and pitch,BTN,,n/a,n/a,Confirmed,Open,6 at 0.5 mm (high confidence); side board on the edge opposite J12; contents not determined
+J8 board FFC,Volume up,BTN,,in,Unknown,Inferred,Open,Only if the volume switches are on this board; active low
+J8 board FFC,Volume down,BTN,,in,Unknown,Inferred,Open,Only if the volume switches are on this board; active low
+J8 board FFC,Grounds,BTN,,power,0 V,Inferred,Open,
+J4 DC-jack board FFC,Contact count and pitch,PWR,,n/a,n/a,Confirmed,Open,16 +/-1 at 0.5 mm (medium-high confidence)
+J4 DC-jack board FFC,14 V input,PWR,,power,14 V,Confirmed,Open,Probably several pins in parallel
+J4 DC-jack board FFC,USB VBUS,USB,,power,5 V,Inferred,Open,Only if a service USB port exists
+J4 DC-jack board FFC,USB D+,USB,,bidir,USB 2.0,Inferred,Open,Only if a service USB port exists
+J4 DC-jack board FFC,USB D-,USB,,bidir,USB 2.0,Inferred,Open,Only if a service USB port exists
+J4 DC-jack board FFC,Grounds,PWR,,power,0 V,Inferred,Open,
+J7 speaker header,Connector family and pitch,SPK,,n/a,n/a,Confirmed,Open,5 positions at about 1.2-1.25 mm; black shrouded right-angle wire-to-board
+J7 speaker header,Red wire,SPK,1,Unknown,Unknown,Confirmed,Open,Wire Confirmed; function not established. Position numbering as given in the photo notes
+J7 speaker header,Black / grey wire,SPK,3,Unknown,Unknown,Confirmed,Open,Wire Confirmed; function not established
+J7 speaker header,Green wire,SPK,5,Unknown,Unknown,Confirmed,Open,Third wire; function not established (a PBTL load needs only two)
+J3 antenna coax,Antenna,RADIO,,n/a,RF,Confirmed,Open,U.FL-type; which radio it serves is unknown
+Second antenna coax,Antenna,RADIO,,n/a,RF,Confirmed,Open,U.FL-type at the opposite bottom corner; no designator read; which radio it serves is unknown

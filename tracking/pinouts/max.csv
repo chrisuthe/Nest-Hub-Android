@@ -1,0 +1,66 @@
+connector,signal,hardware_id,pin,direction,voltage,evidence,status,notes
+Display flex,Contact count and pitch (mainboard end),DISP,,n/a,n/a,Inferred,Open,White ZIF on the right edge about 16-18 mm long: about 27-30 at 0.5 mm or about 51-55 at 0.3 mm staggered (low confidence). Count both ends
+Display flex,Contact count (panel end),DISP,,n/a,n/a,Confirmed,Open,51 pins (BOE summaries; flex listing TV101WXM-AG0-P0). Pitch and pin-1 orientation not found. Flex about 18-19 mm wide
+Display flex,DSI clock pair,DISP,,out,MIPI D-PHY,Confirmed,Open,Signal exists; pin unknown
+Display flex,DSI data lane 0 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 1 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 2 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,DSI data lane 3 pair,DISP,,out,MIPI D-PHY,Confirmed,Open,
+Display flex,LCD reset,DISP,,out,Unknown,Confirmed,Open,Sequence: high 30 ms / low 10 ms / high 30 ms; power-off holds low 100 ms
+Display flex,Panel ID0 (vendor),DISP-ID,,in,Unknown,Confirmed,Open,0 = BOE / 1 = Innolux
+Display flex,Panel ID1 (DDIC),DISP-ID,,in,Unknown,Confirmed,Open,0 = JD9365 / 1 = JD9364
+Display flex,VDDIO,DISP-PWR,,power,3.3 V listed (unverified),Confirmed,Open,May be 1.8 V; measure
+Display flex,AVDD,BIAS,,power,+5.5 V,Confirmed,Open,External bias supply; sequencing unknown
+Display flex,AVEE,BIAS,,power,-5.5 V,Confirmed,Open,External bias supply; sequencing unknown
+Display flex,LED anode,BL,,power,About 17-20 V (inferred),Inferred,Open,Common anode assumed; verify
+Display flex,LED cathode 1,BL,,power,n/a,Inferred,Open,6 strings confirmed; presence on this connector inferred
+Display flex,LED cathode 2,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 3,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 4,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 5,BL,,power,n/a,Inferred,Open,
+Display flex,LED cathode 6,BL,,power,n/a,Inferred,Open,
+Display flex,Touch supply,TOUCH,,power,Unknown,Inferred,Open,Touch may have its own tail instead
+Display flex,Touch I2C SDA,TOUCH,,bidir,Unknown,Inferred,Open,Touch sharing the display flex is inferred; a separate touch ribbon is hinted
+Display flex,Touch I2C SCL,TOUCH,,out,Unknown,Inferred,Open,
+Display flex,Touch interrupt,TOUCH,,in,Unknown,Inferred,Open,
+Display flex,Touch reset,TOUCH,,out,Unknown,Inferred,Open,
+Display flex,Grounds,DISP,,power,0 V,Inferred,Open,Find by continuity
+Camera flex,Contact count and pitch,CAM,,n/a,n/a,Inferred,Open,Module end: one ZIF with about 25 contacts (+/-2) at about 0.3 mm effective pitch (low-medium confidence). Mainboard end unknown
+Camera flex,CSI clock pair,CAM,,in,MIPI D-PHY,Confirmed,Open,Signal exists; pin unknown
+Camera flex,CSI data lane 0 pair,CAM,,in,MIPI D-PHY,Confirmed,Open,1000 Mbps per lane
+Camera flex,CSI data lane 1 pair,CAM,,in,MIPI D-PHY,Confirmed,Open,
+Camera flex,Master clock,CAM,,out,Unknown,Confirmed,Open,24 MHz
+Camera flex,Camera I2C SDA,CAM,,bidir,Unknown,Confirmed,Open,Sensor at 0x36
+Camera flex,Camera I2C SCL,CAM,,out,Unknown,Confirmed,Open,
+Camera flex,Camera reset,CAM,,out,Unknown,Confirmed,Open,Stock GPIO low = run; polarity at the module unknown (XCLR active-low; inverter inferred)
+Camera flex,Analog supply (VANA),CAM,,power,About 2.7-2.8 V (inferred),Inferred,Open,Switched by an enable GPIO on stock
+Camera flex,Digital supply (VDIG),CAM,,power,About 1.0-1.2 V (inferred),Inferred,Open,Switched by an enable GPIO on stock
+Camera flex,I/O supply,CAM,,power,About 1.8 V (inferred),Inferred,Open,
+Camera flex,Grounds,CAM,,power,0 V,Inferred,Open,
+Mic board connectors (two),Contact count and pitch,MIC,,n/a,n/a,Inferred,Open,Two small boards beside the camera hole; each has its own connector. Count and which mainboard connector unknown
+Mic board connectors (two),Supply,MIC,,power,Unknown,Inferred,Open,
+Mic board connectors (two),PDM clock,MIC,,out,Unknown,Confirmed,Open,Shared by both mics
+Mic board connectors (two),PDM data,MIC,,in,Unknown,Confirmed,Open,Two mics on one line (one strapped left and one right; inferred)
+Mic board connectors (two),Grounds,MIC,,power,0 V,Inferred,Open,
+Location unknown,Light sensor I2C SDA,ALS,,bidir,Unknown,Confirmed,Open,Probably on the camera/mic/sensor flex
+Location unknown,Light sensor I2C SCL,ALS,,out,Unknown,Confirmed,Open,
+Location unknown,Light sensor interrupt,ALS,,in,Unknown,Confirmed,Open,No internal pull on stock
+Location unknown,Privacy switch,MUTE,,in,Unknown,Confirmed,Open,Active high; external pull-up
+Location unknown,Volume up,BTN,,in,Unknown,Confirmed,Open,Only if the buttons are off the mainboard; active low
+Location unknown,Volume down,BTN,,in,Unknown,Confirmed,Open,Active low
+Location unknown,Volume both,BTN,,in,Unknown,Confirmed,Open,Active low; the AND logic may be on the mainboard instead
+Location unknown,Amber LED,LED,,out,Unknown,Confirmed,Open,Only if the LED is off the mainboard
+Location unknown,Green LED,LED,,out,Unknown,Confirmed,Open,Only if the LED is off the mainboard
+DC-jack board cable,Contact count and pitch,PWR,,n/a,n/a,Inferred,Open,Not characterised; possibly one of the bottom-edge ZIF connectors
+DC-jack board cable,24 V input,PWR,,power,24 V,Confirmed,Open,Probably several pins in parallel
+DC-jack board cable,Grounds,PWR,,power,0 V,Inferred,Open,
+Speaker header,Connector family and pitch,SPK,,n/a,n/a,Inferred,Open,8 positions (medium-high confidence); about 1.25-1.5 mm pitch; right-angle wire-to-board
+Speaker header,Woofer +,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker header,Woofer -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker header,Left tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
+Speaker header,Left tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker header,Right tweeter +,SPK,,out,Amplifier output,Confirmed,Open,High-passed signal only
+Speaker header,Right tweeter -,SPK,,out,Amplifier output,Confirmed,Open,
+Speaker header,Remaining 2 positions,SPK,,n/a,Unknown,Inferred,Open,8 positions for 6 speaker leads; purpose unknown
+Antenna coax,Wi-Fi / Bluetooth antennas,RADIO,,bidir,RF,Confirmed,Open,MHF4; two jacks besides the Thread jack
+Antenna coax,Thread antenna,THREAD,,bidir,RF,Inferred,Open,Coax jack beside the nRF52840; type not stated

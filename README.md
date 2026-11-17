@@ -17,7 +17,7 @@ Each model document uses the same sections: identification, layout and connector
 
 ## Tracking
 
-What we are building, and how far each item has got, is in [tracking/](tracking/README.md): a hardware requirements table, connector pinout sheets, a driver table, a decisions log and a bench log. Only the 1st gen is seeded so far.
+What we are building, and how far each item has got, is in [tracking/](tracking/README.md): a hardware requirements table, connector pinout sheets, a driver table, a decisions log and a bench log. All three models are seeded.
 
 ## Status
 
