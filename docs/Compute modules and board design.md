@@ -1,4 +1,51 @@
-# Replacement board platforms: SoMs, Android support, and building blocks for a custom smart-display mainboard
+# Compute modules and board design
+
+Everything that applies to the project as a whole and not to one model: what the three models share, the open design decisions, compute module candidates, Android status, and building blocks for the new board. Model-specific hardware facts are in `Nest Hub 1st gen.md`, `Nest Hub 2nd gen.md` and `Nest Hub Max.md`.
+
+Scope: a custom replacement mainboard built around an off-the-shelf compute module, reusing the stock display, touch, microphones, speakers, sensors and enclosure. Modifying or bypassing the stock firmware is out of scope.
+
+## What the three models share
+
+- **Sources.** Google's open-source Fuchsia board drivers ("astro", "nelson", "sherlock") name every peripheral, bus, I2C address and control line, and publish DSI timings and init tables for every panel. Google's GPL Linux kernel tree ("estelle", "elaine", "newman") confirms and extends this. Neither gives connector pinouts. The Fuchsia files should be archived at a pinned commit, since nothing guarantees they stay on the main branch.
+- **One electrical architecture.** All three use a 4-lane MIPI DSI panel, I2C touch, PDM microphones, a TCS3400 light sensor at 0x39 and an LP8556 backlight driver at 0x2C.
+- **Portrait-native panels mounted landscape.** The system must rotate the framebuffer 90 degrees. The marketing resolutions (1024x600, 1280x800) describe use, not scan order.
+- **Several panel variants per model**, chosen on the stock board by strap pins on the display module. The new board should read the straps, or the builder must identify the panel in hand.
+- **The DSI link is undemanding.** By the researchers' arithmetic, the 7-inch panels need about 265 to 300 Mbit/s per lane and the 10-inch about 424 Mbit/s, within the 500 Mbit/s JD936x limit quoted in the Fuchsia comments. Display bandwidth does not discriminate between compute modules.
+- **What leaves with the mainboard:** amplifiers, backlight driver, radios and regulators. The new board must recreate them. Reusing the stock part numbers (LP8556, TPS65132, TAS2770, TAS5805M, TAS5720) keeps them on mainline Linux drivers with Google's register values published.
+- **What does not transfer:** amplifier tuning, far-field voice processing, the camera pipeline and the radar algorithms. Each must be rebuilt, substituted or dropped.
+- **No public pinout exists for any connector on any model.** A sacrificial unit of each target model, ideally still booting stock firmware for passive rail and bus measurements, is the most valuable purchase before design work.
+
+## Open design decisions
+
+1. **Target model, and one board or three.** The 1st gen is the best-documented and simplest: no radar or camera, simple audio, known 14 V supply. The 2nd gen shares its panel family and bus layout (and is now also confirmed at 14 V) and adds the radar, the GT6853 touch risk and a third microphone. The Max differs in voltage, panel size, amplifier count and camera and warrants its own board. A shared schematic core for the two 7-inch models is plausible; a shared outline is unknowable until both boards are measured.
+2. **Compute module.** Newest Android with a community image and a C panel driver (Raspberry Pi CM5); older vendor Android with device-tree panel description and vendor media and audio blocks (Radxa RK3576 / RK3588S); or current vendor Android with the heaviest integration burden (NXP i.MX 8M). How much Play Store access, security patching and image maintenance matter decides this more than performance. The kernel version of the chosen module also sets how much porting the vendor touch and light-sensor drivers need.
+3. **Microphone path.** Stock PDM microphones straight into the SoC with software echo cancellation, through an XMOS-class voice processor, or replaced by an added array.
+4. **Amplifier strategy.** Like-for-like stock parts or a simpler common part, and how to protect small drivers without Google's tuning. On the Max this includes where the 1.2 kHz crossover runs.
+5. **Backlight.** Reuse the LP8556 with Google's published register values (the low-risk path), or design a different driver once the LED strings are characterised.
+6. **Radio and antennas.** On-module Wi-Fi with its own antenna, or a module wired to the stock antennas; and whether to restore Thread, which the 2nd gen and Max implement with Nordic radios on the stock mainboard.
+7. **Optional peripherals and thermal headroom.** Whether the radar ships in version one as a presence sensor, whether the Max camera is attempted, and whether a hotter module can live in an enclosure designed for an SoC dissipating a few watts within a 15 W budget. That thermal judgement is engineering opinion, not a sourced figure.
+
+**Recommended process:** prove panel, touch and audio on an off-the-shelf module IO board through small flex adapter boards before committing to a form-fit carrier. Panel bring-up failures show only as a black screen, so this turns the largest risk into a cheap experiment.
+
+## Android layer above the kernel
+
+Not verified; from general knowledge of AOSP.
+
+- **Display, touch, buttons:** no HAL work. DRM and evdev are picked up directly.
+- **Backlight:** the lights HAL pointed at the backlight sysfs node.
+- **Light and humidity sensors:** a sensors HAL that reads IIO/hwmon devices. The community Raspberry Pi build has an I2C sensor HAL to extend.
+- **Audio:** an audio HAL configuration (tinyalsa/mixer paths) for the amplifier and PDM capture.
+- **Radar:** no Android framework concept; expose it through a custom service or app.
+- **Camera:** a camera HAL on top of V4L2, dependent on the SoC's ISP support.
+
+## Status of earlier risks
+
+- Section 3 below calls obtaining the panel init sequence "the single largest technical risk". That was written before the Fuchsia and GPL kernel tables were found; the init sequences, timings and reset sequence are now published for every panel variant. The remaining display risk is the physical pinout and supply rails.
+- The gap in section 3 about which touch controller, light sensor and panel driver IC the devices use is closed; see the model documents.
+
+---
+
+# Reference: platform research notes
 
 Research date: 2026-11-17. Method note: ~25 search/fetch calls. Most findings come from search-result excerpts or targeted page extractions, not full-page reads; where a claim rests only on an excerpt it is marked "(excerpt)". Items in "Inferences" marked "(background, unverified)" come from the researcher's prior knowledge and were NOT confirmed against a source in this session; treat them as leads, not facts.
 
