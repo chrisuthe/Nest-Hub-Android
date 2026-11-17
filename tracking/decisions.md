@@ -11,6 +11,7 @@ One entry per design decision. Change the status and fill in the outcome when a 
 | D5 | Backlight driver (and panel bias supply on the Max) | Open | | |
 | D6 | Radio and antennas | Open | | |
 | D7 | Optional peripherals and thermal (radar, camera) | Open | | |
+| D8 | Operating system and product scope | Decided | Linux running Hearth, with Home Assistant's Linux Voice Assistant for voice. No Raspberry Pi silicon. Sold as retrofit kits. | 2026-11-17 |
 
 ## D1. Target model
 
@@ -20,7 +21,7 @@ One entry per design decision. Change the status and fill in the outcome when a 
   - **Board ID straps.** A few resistor straps on each board tell software which model it is in.
   - **One bench board.** Drives all three models from outside the enclosure, through small per-model adapter flexes. Used for bring-up before any form-fit board.
   - **Three form-fit layouts.** One per model, from the same schematic, 1st gen first. One drop-in board for all three is ruled out: the stock outlines (about 121 x 46, 101 x 46 and 117 x 62 mm), mounting holes, connector positions, heat paths and input voltages (14 V vs 24 V) all differ.
-  - **One software build.** One kernel and Android build, with a device-tree overlay per model chosen at boot from the board ID straps.
+  - **One software build.** One kernel and Linux image (Android until D8), with a device-tree overlay per model chosen at boot from the board ID straps.
 - **Open:** whether the two 7-inch models can share one form-fit board. Depends on whether the module plus the superset parts fit the 2nd gen's 101 x 46 mm outline and height; needs both boards measured.
 - **Open:** whether one amplifier part suits both the 14 V and the 24 V models (see D4).
 - **2nd gen:** shares the panel family and bus layout with the 1st gen, and adds the radar, the GT6853 touch risk and a third microphone. Its stock board is about 101 x 46 mm against about 121 x 46 mm, so a shared outline is unknowable until both are measured.
@@ -67,3 +68,13 @@ One entry per design decision. Change the status and fill in the outcome when a 
 - **For the 1st gen:** whether to fit temperature sensors, and whether the chosen module stays within what the stock heat sink can shed.
 - **For the 2nd gen:** whether the radar ships in version one as a presence sensor (userspace driver; Google's gesture and sleep features do not transfer; the regulatory position on non-stock radar configuration is open); whether to recreate the INA231 power monitors and the temperature sensors.
 - **For the Max:** whether to attempt the camera at all (deferring it is legitimate); whether to keep the three NTC thermistors. TMP112 and BMA456 are absent from the `b4` revision.
+
+## D8. Operating system and product scope
+
+- **Decided:** the product is a retrofit board sold to other people, running Hearth (the Flutter kiosk app in the Hearth-Home repo).
+- **Decided:** Linux, not Android. Hearth already runs on Linux through flutter-pi, the board needs no Android hardware layers, and Linux images and update tools are fine to use commercially. Voice runs as Home Assistant's Linux Voice Assistant alongside Hearth, as on the Pi build today.
+- **Decided:** no Raspberry Pi silicon.
+- **Consequences:**
+  - The driver tracker's Android-layer column and the "Works in Android" status step no longer apply; the last step becomes "Works in Hearth".
+  - The project name still says Android.
+  - The chip must have a mainline GPU and display stack that flutter-pi, its GStreamer video player and WPE WebKit work on; see "Linux stack and chip selection" in `docs/Compute modules and board design.md`.

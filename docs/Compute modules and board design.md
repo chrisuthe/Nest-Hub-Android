@@ -1,8 +1,10 @@
 # Compute modules and board design
 
-Everything that applies to the project as a whole and not to one model: what the three models share, the open design decisions, compute module candidates, Android status, and building blocks for the new board. Model-specific hardware facts are in `Nest Hub 1st gen.md`, `Nest Hub 2nd gen.md` and `Nest Hub Max.md`.
+Everything that applies to the project as a whole and not to one model: what the three models share, the open design decisions, chip and module selection for the Linux stack, and building blocks for the new board. Model-specific hardware facts are in `Nest Hub 1st gen.md`, `Nest Hub 2nd gen.md` and `Nest Hub Max.md`.
 
 Scope: a custom replacement mainboard built around an off-the-shelf compute module, reusing the stock display, touch, microphones, speakers, sensors and enclosure. Modifying or bypassing the stock firmware is out of scope.
+
+The OS is Linux running Hearth, an open-source Flutter smart-home kiosk, with Home Assistant's Linux Voice Assistant alongside it for voice. Raspberry Pi silicon is excluded. Android was the earlier plan; the Android material in this document is kept for reference only.
 
 ## What the three models share
 
@@ -18,8 +20,8 @@ Scope: a custom replacement mainboard built around an off-the-shelf compute modu
 ## Open design decisions
 
 1. **Target model, and one board or three.** The 1st gen is the best-documented and simplest: no radar or camera, simple audio, known 14 V supply. The 2nd gen shares its panel family and bus layout (and is now also confirmed at 14 V) and adds the radar, the GT6853 touch risk and a third microphone. The Max differs in voltage, panel size, amplifier count and camera and warrants its own board. A shared schematic core for the two 7-inch models is plausible; a shared outline is unknowable until both boards are measured.
-2. **Compute module.** Newest Android with a community image and a C panel driver (Raspberry Pi CM5); older vendor Android with device-tree panel description and vendor media and audio blocks (Radxa RK3576 / RK3588S); or current vendor Android with the heaviest integration burden (NXP i.MX 8M). How much Play Store access, security patching and image maintenance matter decides this more than performance. The kernel version of the chosen module also sets how much porting the vendor touch and light-sensor drivers need.
-3. **Microphone path.** Stock PDM microphones straight into the SoC with software echo cancellation, through an XMOS-class voice processor, or replaced by an added array.
+2. **Compute module.** Linux running Hearth, no Raspberry Pi silicon, on a module narrow enough for a 46 mm board. The research shortlist is RK3576 (Boardcon LGA3576) and i.MX 8M Plus (Ka-Ro QSXP), with RK3566/RK3568 as a cheaper fallback limited to H.264 under mainline; see "Linux stack and chip selection". Nothing is chosen until a dev board passes the go/no-go checks and runs Hearth. The kernel version of the chosen module also sets how much porting the vendor touch and light-sensor drivers need.
+3. **Microphone path.** Stock PDM microphones straight into the SoC with software echo cancellation, through an XMOS-class voice processor, or replaced by an added array. The first option now depends on the chip: mainline PDM support was found for RK3566/RK3568 but not for RK3588 or RK3576, and is unconfirmed on several others (see the chip comparison).
 4. **Amplifier strategy.** Like-for-like stock parts or a simpler common part, and how to protect small drivers without Google's tuning. On the Max this includes where the 1.2 kHz crossover runs.
 5. **Backlight.** Reuse the LP8556 with Google's published register values (the low-risk path), or design a different driver once the LED strings are characterised.
 6. **Radio and antennas.** On-module Wi-Fi with its own antenna, or a module wired to the stock antennas; and whether to restore Thread, which the 2nd gen and Max implement with Nordic radios on the stock mainboard.
@@ -27,9 +29,9 @@ Scope: a custom replacement mainboard built around an off-the-shelf compute modu
 
 **Recommended process:** prove panel, touch and audio on an off-the-shelf module IO board through small flex adapter boards before committing to a form-fit carrier. Panel bring-up failures show only as a black screen, so this turns the largest risk into a cheap experiment.
 
-## Android layer above the kernel
+## Android layer above the kernel (superseded)
 
-Not verified; from general knowledge of AOSP.
+Superseded by decision D8: the product runs Linux, so none of these Android layers are needed. Kept for reference. Not verified; from general knowledge of AOSP.
 
 - **Display, touch, buttons:** no HAL work. DRM and evdev are picked up directly.
 - **Backlight:** the lights HAL pointed at the backlight sysfs node.
@@ -43,9 +45,235 @@ Not verified; from general knowledge of AOSP.
 - Section 3 below calls obtaining the panel init sequence "the single largest technical risk". That was written before the Fuchsia and GPL kernel tables were found; the init sequences, timings and reset sequence are now published for every panel variant. The remaining display risk is the physical pinout and supply rails.
 - The gap in section 3 about which touch controller, light sensor and panel driver IC the devices use is closed; see the model documents.
 
+# Linux stack and chip selection
+
+Research date: 2026-11-17. "Unverified" marks background knowledge not checked against a source. Findings older than 2025 carry their date. "Not found" means the research did not find it, not that it is absent.
+
+## What Hearth needs from a chip
+
+Hearth's Linux stack:
+
+| Layer | Component |
+|---|---|
+| UI | flutter-pi (Hearth fork): DRM/KMS + GBM + EGL/OpenGL ES, no compositor |
+| Video | GStreamer through the flutterpi_gstreamer_video_player plugin, frames imported into GLES as EGL dmabuf images |
+| Web dashboards | WPE WebKit through GStreamer `wpevideosrc`; the fork shares one GstGLDisplay and GstGLContext across `wpevideosrc` pipelines |
+| Audio | ALSA / PipeWire |
+| Voice | Home Assistant Linux Voice Assistant, running alongside |
+
+Go/no-go checks for any candidate, run on the BSP or mainline image that would ship:
+
+| Check | Why |
+|---|---|
+| `EGL_EXT_image_dma_buf_import` | flutter-pi's video player refuses to upload frames without it |
+| `EGL_EXT_image_dma_buf_import_modifiers` | Optional in code, but without it current flutter-pi master has no format list and video asserts or finds no format |
+| `EGL_KHR_surfaceless_context` | Required by flutter-pi's GL renderer |
+| `GL_OES_EGL_image_external` | Enables external OES textures for imported frames |
+| Atomic KMS | flutter-pi uses atomic modesetting (with a legacy fallback); multi-plane commits and explicit fencing need atomic |
+| Hardware H.264 decode (ideally HEVC) reachable from GStreamer with dmabuf output | Software decode hits flutter-pi's broken CPU-copy path (#525) |
+| 4-lane MIPI DSI | All three panels are 4-lane DSI |
+| PDM or I2S microphone input | Stock microphones are PDM |
+| WPE `wpevideosrc` running | Highest-risk component; see below |
+
+No non-Pi board has a report of flutter-pi video or WPE `wpevideosrc` working. Whatever chip is chosen, a bench test of the full stack is required before committing to it.
+
+## flutter-pi and other embedders
+
+**Upstream status.** The flutter-pi README says it is "only tested on a Rasberry Pi 4 2GB" and should work on other Linux platforms with KMS/DRI plus Mesa GLES/EGL, libdrm and libgbm; non-Mesa drivers are "untested". There is no board list and no CI on other hardware. The maintainer fixes non-Pi bugs as they are reported.
+
+**UI reports by chip** (flutter-pi issue tracker):
+
+| SoC | GPU driver | Result | Date |
+|---|---|---|---|
+| RK3566 (Radxa Zero 3E) | Mesa Panfrost | "Works well" (#447) | 2024 |
+| RK3566 (Odroid M1S) | Bifrost blob | UI works; a DSI panel skipped frames until its front porch was fixed (#441) | 2024 |
+| RK3588 | not stated | Failed on master, worked on a branch since merged (#327) | 2023 |
+| RK3568 (Rockchip SDK, kernel 5.10) | vendor | Touch and mouse fail, open (#518) | 2026 |
+| Allwinner H618 | Panfrost | Works once built for arm64 (#421) | 2024 |
+| Amlogic S905Y4 | Panfrost | Image artefacts, also seen in Weston, open (#521) | 2026 |
+| TI AM625 | PowerVR | flutter-gallery runs; hardware cursor fails (#392) | 2024 |
+| i.MX 8M Nano | Vivante blob | Rendering artefacts (#271) | 2022 |
+| i.MX 8QM | Mesa etnaviv | Atomic commit fails on Vivante tiled modifiers; works with an alignment patch that is not merged (#494) | 2025 |
+| Custom Vivante SoM | etnaviv | Raster jank from blocking on page flip (#528); addressed by #529 | 2026 |
+
+Failures fall into recurring classes: vendor tiled modifiers, display drivers with odd plane/zpos/atomic behaviour, implicit-sync bugs, and vendor GL blob crashes. No report was found for RK3576, RK3588 under Panthor, i.MX 8M Plus, i.MX 93/95, AM62P, MediaTek Genio or QCS6490.
+
+**Video and WPE are the weak point.** Video broke on Rockchip libmali blobs (RK3399, 2023; RK3566, Nov 2024; both still open) because those blobs lack `EGL_EXT_image_dma_buf_import_modifiers`. Mesa drivers (Panfrost/Panthor, etnaviv, freedreno) expose it (unverified for Panfrost specifically). The CPU-copy fallback for software-decoded frames is broken on master (#525, 2026). WPE through `wpevideosrc` adds its own GPU requirements (WPEBackend-fdo, EGL, a GL context shared through GstGL) and has not been validated on any non-Pi board. The research infers that a SoC with a mainline Mesa GPU driver and mainline KMS is the strongest choice, and that vendor-blob BSPs (Rockchip libmali, NXP Vivante galcore, TI/IMG PowerVR DDK, Qualcomm Adreno) are where Hearth would carry patches.
+
+**Maintenance.** Last push 2026-11-15; few other commits in 2026. #529 "avoid blocking raster thread on page flip" merged 2026-11-08; Pi CM4 reporters say it removes about 90% of raster jank. The Hearth fork (last push 2026-08-12) should rebase onto it. Open and unmerged as of Nov 2026: #535 (2D GBM buffers for copied video frames), #534 (GStreamer video uploads, event lifetime, looping), #522 (serialise GBM allocation, SIGSEGV with concurrent pipelines), #523 (CEF webview), #490 (frame scheduling). The upstream webview tracking issue (#491, 2025) lists CEF, WPE and Servo; none is merged.
+
+**Alternatives:**
+
+| Embedder | State | Fit for Hearth |
+|---|---|---|
+| ivi-homescreen / meta-flutter (Toyota Connected) | Very active (Nov 2026). DRM/KMS EGL and Vulkan backends, software backend, zero-copy dma-buf platform views, GStreamer `video_player_linux`, CEF webview marked WIP. meta-flutter builds ivi-homescreen, flutter-auto, flutter-pi and flutter-elinux for Yocto | Best fallback. Switching means re-implementing Hearth's video and WPE path as a plugin or platform view: weeks of work (inference) |
+| Sony flutter-elinux | Embedder last commit 2025-05, tool 2025-07, plugins 2024-12. Video player copies through the CPU by default; no webview. Its own table says DRM-GBM does not work on i.MX 8M (Vivante blob lacks EGL on GBM) | Stale |
+| Vendor support | TI: Processor SDK AM62x ships Flutter via meta-flutter as Sony's `flutter-wayland-client` on Weston (Sep 2026). Toradex: partner (Crossware) template using flutter-elinux, Flutter 3.27. NXP: latest i.MX Linux release notes (LF6.18.37_2.1.0, Sep 2026) do not mention Flutter | Thin; no vendor ships flutter-pi |
+
+## Chip comparison
+
+| SoC family | GPU and open driver (GLES) | Mainline display / DSI | Hardware decode (mainline) | PDM mic input | flutter-pi reports | Verdict |
+|---|---|---|---|---|---|---|
+| RK3588 / RK3588S | Mali-G610; Panthor + Panfrost, GLES 3.1 conformant (Jul 2024); Vulkan 1.4 | VOP2 6.8; DSI 6.16 | H.264, HEVC 7.0 (VDPU381, single core); AV1 6.7; VP9 patches sent | No PDM node in mainline DT or Collabora matrix | 2023 only, pre-Panthor | Most complete mainline stack; no 30 mm-class module found |
+| RK3576 | Mali-G52 MC3; Panfrost, GLES 3.1 | VOP 6.15; DSI 6.18-rc1; PWM not upstream | H.264, HEVC 7.0 (VDPU383); VP9, AV1 WIP | No PDM node or matrix row | None found | Shortlist |
+| RK3566 / RK3568 | Mali-G52 2EE; Panfrost, GLES 3.1 | VOP2 and 2x DSI in mainline DT | H.264, VP8, MPEG-2 only (Hantro); HEVC/VP9 (VDPU346) patches posted Dec 2025 to Jan 2026, not merged | Yes: `rk3568-pdm` node | UI works (2024); video failed on blob (Nov 2024) | Cheap mature fallback, H.264 only |
+| Amlogic S905X3 / S905D3 / A311D | Mali-G31 / G52; Panfrost, GLES 3.1 | meson-drm; DSI on S905D3 and A311D, not S905X3 | Staging stateful driver: H.264, VP9, MPEG-1/2; no HEVC | Yes: `sm1-pdm` | S905Y4 artefacts (2026) | Not recommended; newer A311D2 and S928X have no mainline GPU |
+| MediaTek Genio 510 / 700 / 1200 | Mali-G57; Panfrost, GLES 3.1 | mediatek-drm, 2x DSI; DSI on EVKs from 6.14 | Stateless H.264, HEVC, VP9, AV1 (MT8188 / MT8195) | `dmic-codec` in mainline Genio DT; driver details not read | None found | Strong on paper; no orderable module fits a 46 mm board |
+| NXP i.MX 8M Plus | Vivante GC7000UL; etnaviv GLES 3.0 conformant (Sept 2026); BSP blob GLES 3.1 | LCDIF + Samsung DSIM (unverified) | Hantro; HEVC added 2021; mainline G2 HEVC/VP9 quirks (unverified). BSP: 1080p60 H.264/HEVC/VP8/VP9 | MICFIL 8-ch (mainline driver unverified) | None found | Shortlist |
+| NXP i.MX 8M Mini | GC NanoUltra; BSP blob GLES 2.0; etnaviv not checked | Not checked | BSP: H.264/HEVC/VP8/VP9; mainline not checked | MICFIL 8-ch (unverified) | None found (8M Nano blob artefacts, 2022) | Simple UIs only |
+| NXP i.MX 93 | No 3D GPU (2D PXP only) | 4-lane DSI | None; no VPU (unverified) | 8-ch PDM | Software rendering only | Ruled out |
+| NXP i.MX 95 | Mali-G310; Panthor + Panfrost GLES 3.1 "functional and stable" (NXP UG10159), but release notes say OSS conformance not passed and DDK is default; BSP blob GLES 3.2 | DPU not checked | Wave6 stateful H.264/HEVC; upstream v4 Oct 2025, merge not confirmed | Not checked | None found | Plausible, untested |
+| TI AM62x | PowerVR AXE-1-16M; Mesa Vulkan 1.2, not conformant; GLES only via Zink | No DSI (OLDI/LVDS, RGB) | None; no VPU (unverified) | Not found (McASP) | AM625 UI works (2024) | Ruled out |
+| TI AM62P / AM67 | PowerVR BXS-4-64; Mesa Vulkan 1.2 conformant; GLES only via Zink. TI SDK ships DDK 26.1 blob | 4-lane DSI; GPU kernel support queued for 6.20/7.0; Cadence DSI mainline not confirmed | Wave5 H.264/HEVC (upstream since about 6.8, unverified; DT enablement not confirmed) | Not confirmed | None found | Possible on the TI blob; mainline GLES immature |
+| Qualcomm QCS6490 | Adreno 643; freedreno, GLES 3.2 (unverified) | 4-lane DSI; DPU + DSI upstream (unverified) | Iris: H.264, HEVC, VP9 upstream | 3 DMIC ports (datasheet excerpt); upstream depends on AudioReach | None found (DB410c, 2020) | Promising mainline; UBWC import untested |
+
+Per-family notes:
+
+- **Mesa and Mali.** From Mesa 27.0 every Valhall or newer Mali (G57, G610, and G310 by the same table) uses the new Kraid compiler; Mesa 26.3 is the last release with the old one. For a 24/7 product, pin Mesa 26.3.x and soak-test 27.0 before adopting it. Bifrost G52 and G31 are not affected. Mesa lists GLES 3.1, not 3.2, for every Mali generation; that is enough for Flutter and WPE (inference).
+- **RK3588.** Mainline decode uses one VDPU381 core; multi-core support is pending and parallelises separate streams, not one stream. HEVC on VDPU381/383 needs GStreamer 1.28 or newer (released Jan 2026). A DSI kiosk needs kernel 6.16 or newer for DSI and 7.0 or newer for HEVC. No 24/7 Panthor stability report and no flutter-pi or WPE report on Panthor were found. The vendor MPP path runs on the Rockchip 6.1 kernel with the libmali blob, the combination that broke the video player.
+- **RK3576.** Mainline is moving fast (Collabora and Flipper). PWM is not upstream, which matters for a PWM backlight; check whether the backlight can be driven over I2C instead (the stock LP8556 sits on I2C at 0x2C). G52 MC3 is much weaker than G610; heavy WPE pages plus video could be tight (no benchmark read). Module vendor BSPs are Linux 6.1.
+- **RK3566 / RK3568.** The only Rockchip parts with a PDM node in mainline. Mainline decode is H.264 only through Hantro (`v4l2slh264dec`), limited to 1080p60 (unverified).
+- **Amlogic.** The mainline decoder is a stateful staging driver, so GStreamer integration differs from Rockchip and MediaTek. The main BayLibre status page dates from Oct 2020; LibreELEC HEVC notes are from 2023.
+- **MediaTek Genio.** The vendor IoT Yocto BSP (v26.0, Jul 2026) ships kernel 6.6 with the Mali DDK r48 blob, so mainline means Collabora Debian images or your own Yocto. Decoder output is a tiled format that may need a detiling step before GLES import (unverified).
+- **i.MX 8M Plus.** On mainline: etnaviv (Mesa 26.x) with stateless Hantro decode. On the BSP: galcore GLES 3.1 with stateful decode. Tiling and modifier compatibility between Hantro output and the GPU must be tested. A Sep 2026 forum user on etnaviv still saw only ES 2.0 before conformance work reached a release. The 8QM alignment patch was for that chip's display controller; whether 8M Plus needs similar handling is not known.
+- **i.MX 8M Mini.** Flutter runs on ES 2.0, but the flutter-pi research calls it a poor fit for Impeller and recent Flutter, and WPE plus video compositing would be tight. The two notes differ in emphasis here; both rule it out for anything but simple UIs.
+- **i.MX 95.** Arm's proprietary DDK stops getting new features for G310 in 2028 (critical fixes and security patches only after that), which favours designing for Mesa. A Toradex user's Mesa swap on Verdin iMX95 failed under Weston (Mar 2026), most likely because kernel and device tree were unchanged (inference). Wave6 merge, GPU DTS and display controller mainline status are unconfirmed. 15-year availability.
+- **AM62x and i.MX 93: ruled out.** AM62x has no MIPI DSI and no VPU (VPU absence unverified). i.MX 93 has no 3D GPU and no VPU.
+- **AM62P / AM67.** On the TI BSP (DDK blob, out-of-tree `pvrsrvkm`, Wave5 stateful V4L2) every primitive flutter-pi needs is present: the AM67A SDK 10.00 (2024) lists `EGL_EXT_image_dma_buf_import(_modifiers)`, `EGL_KHR_surfaceless_context` and `GL_OES_EGL_image_external`. Whether DDK 26.1 on AM62P keeps them was not confirmed. On mainline, GLES is Zink over the PowerVR Vulkan driver, an extra translation layer.
+- **QCS6490.** Qualcomm Linux (meta-qcom, kernel 6.18) defaults to upstream drivers; KGSL, camera, audio and video blobs are optional. Iris decoder output is often UBWC-compressed NV12; whether freedreno imports it through GStreamer modifier negotiation is the open question, and forcing linear output costs bandwidth. A Sept 2026 Qualcomm forum question on Flutter, GBM and UBWC got only an email reply. Longevity to 2036-07. Production SoMs exist (Thundercomm C6490P, Lantronix Open-Q 6490CS, Quectel SG560D); their sizes were not checked.
+
+## Module, system-in-package or chip-down
+
+**The 46 mm board width is the real constraint.** Most solder-down modules are 40 to 45 mm on a side, which leaves no room for FPC connectors, microphones, amplifier and Wi-Fi on the 101x46 and 121x46 boards. The realistic set for those two boards is the 30 mm-class modules; the 117x62 Max board can also take 40 to 45 mm modules (inference).
+
+**System-in-package.** No orderable SiP (SoC plus DDR, optionally PMIC) with 4-lane DSI, a 3D GPU and a VPU was found. The only current Linux-class SiPs found are Octavo's AM62x parts: OSD62x-PM (9x14 mm, 500-ball 0.5 mm, AM62x + 1 GB DDR4, 4-layer layout, $22.50) and OSD62x (21x21 mm, with PMIC, beta). Both lack DSI and a VPU, so they are ruled out. No Rockchip, i.MX 8M/9, MediaTek or AM62P SiP was found; absence is not proven.
+
+**Solder-down modules that fit a 46 mm board:**
+
+| Module | Size | SoC | Wi-Fi on module | Price seen | Caveats |
+|---|---|---|---|---|---|
+| Boardcon LGA3576 | 45 x 30 mm, 330-pad LGA, 1.25 mm pitch | RK3576 | No | Not public; RK3576 LGA modules likely about $75 to $100 at qty 1 (inferred from MYIR's 2024 prices) | DSI lane count and PDM not stated; BSP Linux 6.1; RK806S-5 PMIC; height not found |
+| Ka-Ro QSXP (QSXP-ML81) | 29 x 29 x 2.6 mm, 108 pads, 1 mm pitch | i.MX 8M Plus | No | Mouser US $312.35 qty 1, $291.90 qty 10; Mouser LU EUR 172.44 (inconsistent) | 4-lane DSI, 8-ch PDM, 18x I2S/TDM, 2x CSI; Yocto, Debian |
+| Ka-Ro QSXM (QSXM-MM60) | 29 x 29 x 2.6 mm, 108 pads | i.MX 8M Mini | No | $227.09 and $161.89 seen | GLES 2.0 GPU; one Mouser listing says the factory is not taking orders |
+| Ka-Ro QS95 | 29 x 29 mm | i.MX 95 | No | Not found | 4-lane DSI; expensive SoC (inference) |
+| Ezurio Carbon AM67 OSM-MF | 45 x 30 mm | TI AM67x | Optional Sona TI351 (Wi-Fi 6 + BT 5.4) or IF513 (Wi-Fi 6E); certifications not stated on page | About $338 (4GB/16GB) to $594 (8GB) | Ships Q4 2026; 10+ year availability; PDM not confirmed |
+| Grinn GenioSOM-360 / 360P | 30 x 30 mm, LGA-303 | Genio 360 / 360P (Mali-G57 MC2) | Not stated | Not found | Not yet orderable (2026-07-31); DSI lanes not stated |
+
+i.MX 93 modules in the same size class (Ka-Ro QS93, Compulab MCM-iMX93, OSM-S) fit physically but are ruled out by the SoC.
+
+**40 to 50 mm modules (Max board only):**
+
+| Module | Size | SoC | Notes |
+|---|---|---|---|
+| MYIR MYC-LR3576 | 43 x 45 mm, 381-pin LGA | RK3576 | 2x 8-ch PDM, 1x DSI; $75 / $99 (2024-11-06); 12-layer module PCB |
+| Geniatech SOM-3566-OSM | 45 x 45 mm (OSM-L) | RK3566 | 8-ch PDM; no prices to individuals |
+| Digi ConnectCore 8M Mini | 40 x 45 x 3.5 mm | i.MX 8M Mini | Pre-certified 802.11ac + BT 5 on module (US, CA, EU, JP, AU/NZ) |
+| Grinn GenioSOM-510 / 700 | 37.0 x 42.6 mm, LGA-312 | Genio 510 / 700 | 2x 4-lane DSI; open BSP |
+| Advantech AOM-2421 | 45 x 45 mm (OSM-L) | Genio 520 | 1x 4-lane DSI |
+
+No LGA modules were found from Radxa (CM3/CM4/CM5 are board-to-board), Firefly, FriendlyElec, Variscite, SolidRun or Seeed; this is a gap, not a confirmed absence.
+
+**Chip-down.** Published break-even analyses put chip-down past roughly 50k to 100k units (Oxit 2025, for a simpler module); Digi says it "tends to make sense only at very high volumes". At hundreds to low thousands of units, DDR layout, bring-up and RF certification NRE is unlikely to be recovered (inference).
+
+| SoC | Layer-count evidence | Effort |
+|---|---|---|
+| RK3566 | Rockchip thermal simulation on 4 layers; open 6-layer LPDDR4 devkit | Most tractable: many reference designs, RK809/RK817 PMIC templates; 0.4 mm-pitch fanout is the hard part |
+| RK3576 | MYIR's module PCB is 12 layers | Hard |
+| i.MX 8M Mini | NXP validation board 8 layers (HDG, 2019); Phytec carriers from 6 layers | Higher |
+| AM62x (via OSD62x-PM SiP) | 4 layers, 3/3 mil | Lowest, but no DSI |
+
+**Wi-Fi certification.** Most modules need a separate certified Wi-Fi module on the carrier. Digi ConnectCore has pre-certified Wi-Fi on the module; Ezurio Carbon offers on-module Wi-Fi but its certifications were not confirmed. Every Rockchip, Boardcon, MYIR and Ka-Ro option needs a separate module.
+
+## Recommendation
+
+This is the research's recommendation, not a decision.
+
+- **Shortlist:** RK3576 on the Boardcon LGA3576 (fits 46 mm, strong and fast-moving mainline: Panfrost, DSI, H.264/HEVC decode) and i.MX 8M Plus on the Ka-Ro QSXP (smallest module, 8-ch PDM, mature decode, etnaviv GLES 3.0 conformant Sept 2026).
+- **Fallback:** RK3566/RK3568, cheap and mature with mainline PDM, but limited to H.264 decode under mainline.
+- **Next step:** buy a dev board for the top one or two, run the go/no-go checks, then run Hearth itself (UI, video and WPE) before choosing.
+
+## Sources
+
+What Hearth needs from a chip:
+- flutter-pi `gl_renderer.c`: https://github.com/ardera/flutter-pi/blob/master/src/gl_renderer.c
+- flutter-pi `modesetting.c`: https://github.com/ardera/flutter-pi/blob/master/src/modesetting.c
+- flutter-pi `gstreamer_video_player/frame.c`: https://github.com/ardera/flutter-pi/blob/master/src/plugins/gstreamer_video_player/frame.c
+- Hearth flutter-pi fork: https://github.com/chrisuthe/flutter-pi-hearth
+- `wpevideosrc`: https://gstreamer.freedesktop.org/documentation/wpe/wpevideosrc.html
+
+flutter-pi and other embedders:
+- flutter-pi README and issues (#86, #125, #147, #249, #271, #327, #339, #356, #370, #392, #412, #421, #429, #438, #441, #447, #457, #460, #491, #494, #508, #513, #518, #521, #525, #528, #529; PRs #490, #522, #523, #534, #535): https://github.com/ardera/flutter-pi and https://github.com/ardera/flutter-pi/issues/N
+- Sony flutter-elinux: https://github.com/sony/flutter-embedded-linux , https://github.com/sony/flutter-elinux/wiki/Support-status , https://github.com/sony/flutter-elinux-plugins , https://github.com/sony/flutter-elinux-plugins/tree/main/packages/video_player
+- ivi-homescreen: https://github.com/toyota-connected/ivi-homescreen , https://github.com/toyota-connected/ivi-homescreen-plugins
+- meta-flutter: https://github.com/meta-flutter/meta-flutter
+- TI AM62x GUI Frameworks guide: https://software-dl.ti.com/processor-sdk-linux/esd/AM62X/latest/exports/docs/linux/Demo_User_Guides/GUI_Frameworks_User_Guide.html
+- NXP i.MX Linux release notes RN00210: https://www.nxp.com/docs/en/release-note/RN00210.pdf
+- Toradex templates and forum: https://github.com/torizon/vscode-torizon-templates , https://community.toradex.com/t/flutter-dart-template-fails-to-solve-crossware-app-5050-public-repos-flutter-sdk/30835
+
+Chip comparison:
+- Mesa Panfrost: https://docs.mesa3d.org/drivers/panfrost.html
+- Collabora, Panthor GLES 3.1 conformance (2024): https://www.collabora.com/news-and-blog/news-and-events/taming-the-panthor-opengl-es-31-conformance-achived-mali-g610.html
+- Collabora, Rockchip year in review (Mar 2026): https://www.collabora.com/news-and-blog/blog/2026/03/02/running-mainline-linux-u-boot-and-mesa-on-rockchip-a-year-in-review/
+- Collabora, Kraid compiler (Oct 2026): https://www.collabora.com/news-and-blog/news-and-events/panfrost-is-now-using-kraid.html
+- GStreamer 1.28: https://gstreamer.freedesktop.org/releases/1.28/
+- RK3588 mainline matrix: https://gitlab.collabora.com/hardware-enablement/rockchip-3588/notes-for-rockchip-3588/-/raw/main/mainline-status.md
+- RK3588 DT: https://raw.githubusercontent.com/torvalds/linux/master/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+- Collabora, RK3588/RK3576 decoders merged (Feb 2026): https://www.collabora.com/news-and-blog/news-and-events/rk3588-and-rk3576-video-decoders-support-merged-in-the-upstream-linux-kernel.html
+- Radxa Mali GPU doc: https://docs.radxa.com/en/rock5/rock5b/radxa-os/mali-gpu
+- RK3576 mainline matrix: https://gitlab.collabora.com/hardware-enablement/rockchip-3588/notes-for-rockchip-3576/-/raw/main/mainline-status.md
+- RK3576 DT: https://raw.githubusercontent.com/torvalds/linux/master/arch/arm64/boot/dts/rockchip/rk3576.dtsi
+- Collabora and Flipper, RK3576 (May 2026): https://www.collabora.com/news-and-blog/news-and-events/collabora-flipper-opening-up-the-rk3576.html ; https://docs.flipper.net/one/cpu-software/rk3576-mainlining
+- RK356x DT: https://raw.githubusercontent.com/torvalds/linux/master/arch/arm64/boot/dts/rockchip/rk356x-base.dtsi
+- rkvdec driver: https://raw.githubusercontent.com/torvalds/linux/master/drivers/media/platform/rockchip/rkvdec/rkvdec.c
+- Hantro Rockchip variants: https://raw.githubusercontent.com/torvalds/linux/master/drivers/media/platform/verisilicon/rockchip_vpu_hw.c
+- VDPU346 patches: https://lists.infradead.org/pipermail/linux-rockchip/2025-December/066129.html , https://lists.openwall.net/linux-kernel/2026/01/11/413
+- Amlogic DTs and staging vdec: https://api.github.com/repos/torvalds/linux/contents/arch/arm64/boot/dts/amlogic , https://raw.githubusercontent.com/torvalds/linux/master/drivers/staging/media/meson/vdec/vdec_platform.c
+- linux-meson status (2020): https://linux-meson.com/hardware.html
+- MediaTek DTs and decoder: https://raw.githubusercontent.com/torvalds/linux/master/arch/arm64/boot/dts/mediatek/mt8188.dtsi , https://raw.githubusercontent.com/torvalds/linux/master/drivers/media/platform/mediatek/vcodec/decoder/mtk_vcodec_dec_stateless.c
+- Collabora, Genio update (Mar 2025): https://www.collabora.com/news-and-blog/news-and-events/mediatek-genio-update-kernel-debian-13-images-and-kernelci.html
+- MediaTek IoT Yocto v26.0: https://genio.mediatek.com/doc/iot-yocto/latest/sw/yocto/release-notes/iot-yocto-v26.0-release-note.html
+- Igalia, etnaviv GLES 3.0 conformant (Oct 2026): https://www.igalia.com/2026/etnaviv-is-now-OpenGL-ES-3.0-conformant.html
+- NXP forum, etnaviv ES 2.0 on 8M Plus (Sep 2026): https://community.nxp.com/t5/i-MX-Processors/i-MX-8M-Plus-GC7000UL-only-reports-OpenGL-ES-2-0-via-Mesa/m-p/2413115
+- Collabora, HEVC for i.MX 8M (2021): https://www.collabora.com/news-and-blog/blog/2021/02/17/adding-hevc-support-for-imx-8m/
+- i.MX 93 GPU: https://forum.fs-net.de/index.php?thread/4819-grafik-starter-kit/
+- NXP UG10159: https://docs.nxp.com/bundle/UG10159/page/topics/current_status_and_limitations.html , https://docs.nxp.com/bundle/UG10159/page/topics/mali_ddk_feature-freeze_lifecycle.html
+- Toradex i.MX 95 Panfrost thread: https://community.toradex.com/t/using-mesa-panfrost-instead-of-mali-imx-proprietary-library-on-verdin-imx95-weston-compositor-failure/30087
+- Wave6 driver: https://lwn.net/Articles/1035632/
+- Mesa PowerVR: https://docs.mesa3d.org/drivers/powervr.html
+- Phoronix, BeaglePlay open PowerVR stack (Jan 2026): https://www.phoronix.com/news/BeaglePlay-PowerVR-Success
+- Phoronix, AM62P in Linux 7.0 (Jan 2026): https://www.phoronix.com/news/Imagination-AM62P-Linux-7.0
+- TI AM62Px SDK release notes: https://software-dl.ti.com/processor-sdk-linux/esd/AM62PX/latest/exports/docs/devices/AM62PX/linux/Release_Specific_Release_Notes.html
+- TI AM62Px Wave5 (2024): https://software-dl.ti.com/processor-sdk-linux/esd/AM62PX/09_02_01_09/exports/docs/linux/Foundational_Components_Multimedia_wave5.html
+- TI AM67A Rogue graphics overview (2024): https://software-dl.ti.com/jacinto7/esd/processor-sdk-linux-am67a/10_00_00/exports/docs/linux/Foundational_Components/Graphics/Rogue/Overview.html
+- QCS6490 status: https://www.techveda.live/qcs6490/
+- Qualcomm Linux overlays and video: https://dragonwingdocs.qualcomm.com/Key-Documents/Migration-Guide/enable-and-evaluate-qualcomm-linux-overlays , https://dragonwingdocs.qualcomm.com/Technologies/Video/build-video-source-components
+- Iris Gen2 on SC7280: https://lwn.net/Articles/1065596/
+- Qualcomm forum, Flutter on QCS6490: https://mysupport.qualcomm.com/supportforums/s/question/0D5dK00000U2eMiSAJ/
+- QCS6490 data sheet: https://docs.qualcomm.com/doc/80-23889-1/topic/Introduction.html
+
+Module, system-in-package or chip-down:
+- Octavo OSD62x-PM and OSD62x: https://octavosystems.com/octavo_products/osd62x-pm/ , https://octavosystems.com/octavo_products/osd62x/ , https://octavosystems.com/app_notes/osd62x-pm-layout-guide/
+- AM62P datasheet (4-lane DSI): https://www.ti.com/lit/ds/symlink/am62p.pdf
+- Boardcon LGA3576: https://www.electronics-lab.com/news/boardcon-lga3576-som-and-idea3576-sbc-feature-rockchip-rk3576-soc-with-6-tops-npu-and-rk806s-5-pmic/
+- Ka-Ro QSXP, QSXM, QS93, QS95: https://www.mouser.com/datasheet/2/616/QSXP-2326726.pdf , https://www.glyn.de/Daten/DSS/Ka-Ro/Sales-Information/PromoPackage/QSMODULE/QSXM.pdf , https://www.karo-electronics.de/qs93/ , https://www.karo-electronics.de/qs95/
+- Ka-Ro prices: https://www.mouser.com/ProductDetail/Ka-Ro-electronics/QSXP-ML81?qs=TuK3vfAjtkXTos%252BT9dtpkA%3D%3D , https://www.mouser.co.il/ProductDetail/Ka-Ro-electronics/QSXM-MM60?qs=QNEnbhJQKvYxUbulBQj1Sw%3D%3D
+- Ezurio Carbon AM67: https://www.ezurio.com/system-on-module/osm-som/carbon-am67-som , https://linuxgizmos.com/tiny-osm-mf-module-runs-linux-on-sitara-am67x-with-4-tops-ai/
+- Grinn GenioSOM: https://grinn-global.com/blog/mediatek-genio-360-360p-510-700-som-system-on-modules-grinn
+- GLYN solder-down list: https://www.glyn.com/products/computer-on-module/solder-down-modules/
+- MYIR MYC-LR3576 (2024): https://www.myirtech.com/news_list.asp?id=907
+- Geniatech SOM-3566-OSM: https://www.geniatech.com/product/som-3566-osm/
+- Digi ConnectCore 8M Mini: https://www.digi.com/products/embedded-systems/digi-connectcore/system-on-modules/digi-connectcore-8m-mini
+- Compulab MCM-iMX93 (2024): https://www.compulab.com/products/computer-on-modules/mcm-imx93-nxp-i-mx-93-som-smd-system-on-module/
+- Radxa CM3 / CM4: https://www.radxa.com/products/cm/cm3/ , https://www.radxa.com/products/cm/cm4/
+- RK3566 Hardware Design Guide (2022): https://dl.xkwy2018.com/downloads/RK3568/RK356X/Hardware/Rockchip_RK3566_Hardware_Design_Guide_V1.1_EN.pdf ; RK3566 devkit reference: https://groundplanestudio.com/silicon/rk3566
+- i.MX 8M Mini HDG (2019): https://www.zlgmcu.com/data/upload/file/highmpu/i.MX-8MMini-yhsc.pdf ; Phytec carrier layers: https://www.phytec.de/cdocuments/?doc=SwBeEw
+- Break-even: https://oxit.com/module-or-chip-down-design-a-cost-comparison-and-breakeven-analysis/ , https://www.digi.com/blog/post/choose-the-starting-point-embedded-system-design
+
 ---
 
 # Reference: platform research notes
+
+These notes were written for the earlier Android plan and are kept for reference; their Raspberry Pi and Android-build material is superseded by "Linux stack and chip selection" above.
 
 Research date: 2026-11-17. Method note: ~25 search/fetch calls. Most findings come from search-result excerpts or targeted page extractions, not full-page reads; where a claim rests only on an excerpt it is marked "(excerpt)". Items in "Inferences" marked "(background, unverified)" come from the researcher's prior knowledge and were NOT confirmed against a source in this session; treat them as leads, not facts.
 
