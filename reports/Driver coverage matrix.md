@@ -57,11 +57,11 @@ Not verified; from general knowledge of AOSP.
 
 ## Also found: Google's GPL kernel tree for the 2nd gen
 
-The mirrored tree contains more than drivers. Device trees named `elaine-*.dts` and `elaine-sm1-panel.dtsi` are present. These should hold the stock panel power sequencing and pin assignments on the SoC side, which the pinout work still lacks. They have not been read yet. Equivalent releases for the 1st gen and Max have not been looked for.
+The mirrored tree contains more than drivers. Device trees named `elaine-*.dts` and `elaine-sm1-panel.dtsi` are present. These should hold the stock panel power sequencing and pin assignments on the SoC side, which the pinout work still lacks. **Update:** these have now been read, and the same tree also holds the 1st gen (`estelle`) and Max (`newman`) device trees and a vendor FocalTech driver with an FT3427 config. See `Stock kernel device tree findings.md`.
 
 ## Gaps and next steps
 
-1. Read `elaine-sm1-panel.dtsi` and the `elaine` board device trees for panel power sequence and rail information.
-2. Look for the matching GPL kernel releases for the 1st gen and Max.
+1. Done: device trees read for all three models (see `Stock kernel device tree findings.md`).
+2. Done: the 1st gen and Max are in the same tree.
 3. Decide the compute module, since kernel version decides how much porting the vendor drivers need.
 4. Bench-test the unlisted touch controllers (FT3x27, GT9293) against the mainline drivers before porting anything.
