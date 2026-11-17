@@ -39,6 +39,19 @@ Opened and unpowered:
 - [ ] Temperature sensor parts present on a retail board (`THERM`)
 - [ ] Board outline, mounting holes, connector positions, height limits (`MECH`)
 
+## Planned measurements, thermal (all models)
+
+On the ROCK 4D (RK3576) running Hearth:
+
+- [ ] Board input power at idle, on the photo screen, playing 1080p H.264, playing HEVC, and on a Home Assistant dashboard, with an inline USB-C power meter (`THERM`, `SOM`)
+- [ ] SoC temperature over a 30-minute run of each, with no fan and the stock Radxa heat sink removed if practical (`THERM`)
+- [ ] The same with the CPU's top frequencies capped, to see how much power a cap saves without visible lag (`THERM`)
+
+On each opened Nest Hub:
+
+- [ ] Stock heat sink or spreader: material, outline, thickness, where it touches the board, how it mounts, and whether it also touches the enclosure or display frame (`THERM`, `MECH`)
+- [ ] Gap between the board and the heat sink at the SoC position, to size a thermal pad for a new board (`THERM`, `MECH`)
+
 ## Planned measurements, 2nd gen
 
 Before opening (unit running stock firmware):
